@@ -1,3 +1,18 @@
+# LaTeX
+refs.bib
+*.aux
+*.bbl
+*.bcf
+*.log
+*.out
+*.run.xml
+*.toc
+*.blg
+*.pdf
+
+# Everything below this point was provided by GitHub.
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
