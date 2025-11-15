@@ -1,0 +1,45 @@
+\documentclass{scrartcl}
+
+\usepackage[british]{babel}
+\usepackage{hyperref}
+\usepackage{csquotes}
+\usepackage[backend=biber,style=ieee]{biblatex}
+
+\subject{COM3013}
+\title{Option A}
+\author{
+  Iason Kitsopanos
+  \and
+  Alex Godwin
+  \and
+  Kaventthan Sivachelvan
+  \and
+  Noah Tarr\\6845511
+}
+\publishers{Group 2}
+\date{5th November 2025}
+
+\begin{filecontents*}[overwrite]{refs.bib}
+@online{whatsapp,
+title={WhatsApp Messenger},
+author={{Meta Platforms}},
+date={2025},
+url={https://whatsapp.com},
+urldate = {2025-03-18}
+}
+\end{filecontents*}
+
+\addbibresource{refs.bib}
+
+\hypersetup{pdftitle={Group 2}, pdfauthor={Iason Kitsopanos, Alex Godwin, Kaventthan Sivachelvan and Noah Tarr}, hidelinks}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+  The abstract goes here.
+\end{abstract}
+\section{Literature review}
+\textcite{whatsapp} exist.
+(This is just an example.)
+\printbibliography
+\end{document}
