@@ -1,45 +1,234 @@
-\documentclass{scrartcl}
+\documentclass[conference]{IEEEtran}
 
-\usepackage[british]{babel}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+
+% Compact lists
+\setlist[itemize]{topsep=3pt, itemsep=2pt, leftmargin=*}
+\setlist[enumerate]{topsep=3pt, itemsep=2pt, leftmargin=*}
+
+% Subtle paragraph spacing
+\setlength{\parskip}{2pt plus 1pt minus 1pt}
+
+% Black, underlined hyperlinks
 \usepackage{hyperref}
-\usepackage{csquotes}
-\usepackage[backend=biber,style=ieee]{biblatex}
-
-\subject{COM3013}
-\title{Option A}
-\author{
-  Iason Kitsopanos\\6549946
-  \and
-  Alex Godwin
-  \and
-  Kaventthan Sivachelvan
-  \and
-  Noah Tarr\\6845511
+\hypersetup{
+  colorlinks=false,            % link text black
+  pdfborder={0 0 1},           % enabling underline as the "border"
+  pdfborderstyle={/S/U/W 0.8}, % U=underline, W=line thickness
+  linkbordercolor={0 0 0},     % black underline for internal links
+  urlbordercolor={0 0 0},      % black underline for URLs
+  citebordercolor={0 0 0}      % black underline for citations
 }
-\publishers{Group 2}
-\date{5th November 2025}
 
-\begin{filecontents*}[overwrite]{refs.bib}
-@online{whatsapp,
-title={WhatsApp Messenger},
-author={{Meta Platforms}},
-date={2025},
-url={https://whatsapp.com},
-urldate = {2025-03-18}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\fancypagestyle{firstpagefooter}{%
+  \fancyhf{}
+  \renewcommand\headrulewidth{0pt}
+  \fancyfoot[R]{COM3013 Project Report}
 }
-\end{filecontents*}
 
-\addbibresource{refs.bib}
-
-\hypersetup{pdftitle={Group 2}, pdfauthor={Iason Kitsopanos, Alex Godwin, Kaventthan Sivachelvan and Noah Tarr}, hidelinks}
+\pagestyle{empty}
 
 \begin{document}
+
+\title{Optimising CNNs on CIFAR-10: A Comparative Study of Gradient-Based and Metaheuristic Training Algorithms}
+
+\author{
+\IEEEauthorblockN{Jason Kitsopanos, Alex Godwin, Kaventthan Sivachelvan, Noah Tarr}
+\IEEEauthorblockA{Department of Computer Science\\
+University of Surrey\\
+Guildford, United Kingdom}
+}
+
 \maketitle
+
+\thispagestyle{firstpagefooter}
+
 \begin{abstract}
-  The abstract goes here.
+Abstract to be completed later.
 \end{abstract}
-\section{Literature review}
-\textcite{whatsapp} exist.
-(This is just an example.)
-\printbibliography
+
+% ---------------------------------------------------------------
+\section{\textbf{Background and Literature Review}}
+
+\subsection*{(i) Neural Architectures for Image Classification}
+
+Early successful image classifiers were based on Convolutional Neural Networks (CNNs) with relatively few layers. Early work such as LeNet-5~[1] showed that a small CNN with two convolutional layers and a few fully connected layers could already outperform hand-crafted features on handwritten digit recognition, establishing the pattern of alternating convolution and pooling layers. LeNet-5 was designed for small grayscale images with relatively few parameters, which is close to lightweight custom CNNs often used as baselines on datasets like CIFAR-10.
+
+A major jump on large-scale natural images came with AlexNet~[2], which won the 2012 ImageNet competition. It demonstrated that increasing depth and width, together with data augmentation, could bring deep learning to high-resolution colour images. Residual Networks (ResNets)~[3] then addressed the difficulty of training very deep models by adding skip connections so that layers learn residual functions, this allowed networks over 100 layers to be trained reliably and ResNet-style backbones became standard for both ImageNet and CIFAR-10. Later CNN families such as EfficientNet~[4] focus on systematic scaling of depth, width and resolution to achieve better accuracy vs efficiency trade-offs. In parallel, Vision Transformers (ViT)~[5] showed that transformer architectures operating on image patches can match or surpass CNNs on large datasets when combined with large-scale pre-training. For modest-sized datasets and scale experiments, relatively shallow CNNs remain common because they are easy to implement, fast to train and less demanding in terms of hyperparameter tuning.
+
+\subsection*{(ii) Training Methods for CNNs}
+
+These architectures are almost always trained with gradient-based optimisation. Backpropagation~[6] is used to compute gradients of the loss with respect to all weights, and mini-batch SGD with momentum or adaptive optimisers such as Adam~[7] are typically used, together with standard regularisation methods such as weight decay, dropout~[8] and batch normalisation~[9], plus learning-rate schedules, to control overfitting and stabilise training. When data is limited or pre-trained models are available, it is common to freeze some layers and train only the final classifier with backpropagation, treating the earlier convolutional part as a fixed feature extractor.
+
+\subsection*{(iii) Limitations of Gradient-Based Optimisation}
+
+Despite their success, gradient-based methods have limitations. They assume a differentiable computational graph and can be sensitive to initialisation and hyperparameters. The loss landscape of deep networks is highly non-convex, and although in practice stochastic gradient descent often finds good minima, there is no guarantee it explores the space of solutions broadly or escapes all poor local optima~[10]. These issues have motivated alternative, derivative-free optimisation strategies based on meta-heuristics and population-based search, especially in settings where gradients are hard to compute or unreliable.
+
+\subsection*{(iv) Population-Based and Meta-Heuristic Algorithms}
+
+Population-based algorithms such as Genetic Algorithms (GA), Differential Evolution (DE), Particle Swarm Optimisation (PSO) and Evolution Strategies (ES) treat the network weights as a vector to be searched over by evolving or moving a population of candidate solutions~[11]–[14]. Instead of following local gradient information, they use random variation and selection based on a fitness measure such as validation accuracy. This makes them suited to non-differentiable or noisy objective functions and less prone to getting trapped in narrow local minima. However, applying population-based algorithms to full deep networks is computationally expensive, because each fitness evaluation requires a forward pass over many samples for every individual in the population. As a result, most studies either focus on small networks and low-dimensional problems, or use evolutionary search to design architectures or tune hyperparameters rather than to optimise all weights directly~[11],~[12]. For image classification benchmarks such as CIFAR-10, CNNs are typically trained end-to-end with backpropagation, while in transfer-learning settings it is common to fine-tune only specific layers.
+
+\subsection*{(v) Unresolved Issues and Research Gap}
+
+For lightweight custom CNNs on CIFAR-10, training still raises several issues, including overfitting on a relatively small dataset and sensitivity to optimiser and learning-rate choices. In practice, however, the dominant pipeline remains to train all layers with backpropagation and, when data is limited, to freeze the feature extractor and fine-tune only the last fully connected layer using gradient-based methods. There is much less systematic work on what happens if we keep the convolutional layers fixed but replace gradient descent at the final layer with population-based meta-heuristics. In particular, it is not clear whether such last-layer optimisation can match or improve on standard gradient training in terms of classification accuracy or other practical trade-offs on CIFAR-10.
+
+\subsection*{(vi) Our Contribution}
+
+TODO: One paragraph here later
+
+
+
+% % ---------------------------------------------------------------
+% \section{Selected CNN Architecture}
+
+
+% \subsection*{(i) Architecture Description}
+
+
+% \subsection*{(ii) Justification of Design Choices}
+
+
+% \subsection*{(iii) Architecture Illustration}
+
+
+% % ---------------------------------------------------------------
+% \section{Chosen Training Algorithms}
+
+% \subsection*{(i) Baseline Gradient Descent Method}
+
+
+% \subsection*{(ii) Population-Based Heuristic}
+
+
+
+% \subsection*{(iii) Chosen Algorithm 1}
+
+
+% \subsection*{(iv) Chosen Algorithm 2}
+
+
+% \subsection*{(v) Pseudocode or Flowchart}
+
+
+% % ---------------------------------------------------------------
+% \section{Numerical Results}
+
+% \subsection*{(i) Experimental Setup and Parameters}
+
+
+% \subsection*{(ii) Accuracy Comparison}
+
+
+% \subsection*{(iii) Performance Trends}
+
+
+% \subsection*{(iv) Discussion of Results}
+
+
+% % ---------------------------------------------------------------
+% \section{Bi-Objective Optimisation with NSGA-II}
+
+% \subsection*{(i) Problem Formulation}
+
+
+% \subsection*{(ii) NSGA-II Setup}
+
+
+% \subsection*{(iii) Bi-Objective Results}
+
+
+% \subsection*{(iv) Single vs Multi-Objective Discussion}
+
+
+% % ---------------------------------------------------------------
+% \section{Conclusion}
+
+
+% ---------------------------------------------------------------
+\begin{thebibliography}{00}
+
+\bibitem{lecun1998}
+Y.~LeCun, L.~Bottou, Y.~Bengio, and P.~Haffner, 
+``Gradient-based learning applied to document recognition,'' 
+\emph{Proceedings of the IEEE}, vol.~86, no.~11, pp.~2278--2324, 1998.
+
+\bibitem{krizhevsky2012}
+A.~Krizhevsky, I.~Sutskever, and G.~E.~Hinton, 
+``ImageNet classification with deep convolutional neural networks,'' 
+in \emph{Advances in Neural Information Processing Systems 25 (NIPS)}, 2012, pp.~1106--1114.
+
+\bibitem{he2016}
+K.~He, X.~Zhang, S.~Ren, and J.~Sun, 
+``Deep residual learning for image recognition,'' 
+in \emph{Proc. IEEE Conf. Computer Vision and Pattern Recognition (CVPR)}, 2016, pp.~770--778.
+
+\bibitem{tan2019}
+M.~Tan and Q.~V.~Le, 
+``EfficientNet: Rethinking model scaling for convolutional neural networks,'' 
+in \emph{Proc. 36th Int. Conf. Machine Learning (ICML)}, 2019, pp.~6105--6114.
+
+\bibitem{dosovitskiy2021}
+A.~Dosovitskiy \emph{et al.}, 
+``An image is worth 16$\times$16 words: Transformers for image recognition at scale,'' 
+in \emph{Int. Conf. Learning Representations (ICLR)}, 2021.
+
+\bibitem{rumelhart1986}
+D.~E.~Rumelhart, G.~E.~Hinton, and R.~J.~Williams, 
+``Learning representations by back-propagating errors,'' 
+\emph{Nature}, vol.~323, no.~6088, pp.~533--536, 1986.
+
+\bibitem{kingma2015}
+D.~P.~Kingma and J.~Ba, 
+``Adam: A method for stochastic optimization,'' 
+in \emph{Int. Conf. Learning Representations (ICLR)}, 2015.
+
+\bibitem{srivastava2014}
+N.~Srivastava, G.~Hinton, A.~Krizhevsky, I.~Sutskever, and R.~Salakhutdinov, 
+``Dropout: A simple way to prevent neural networks from overfitting,'' 
+\emph{Journal of Machine Learning Research}, vol.~15, pp.~1929--1958, 2014.
+
+\bibitem{ioffe2015}
+S.~Ioffe and C.~Szegedy, 
+``Batch normalization: Accelerating deep network training by reducing internal covariate shift,'' 
+in \emph{Proc. 32nd Int. Conf. Machine Learning (ICML)}, 2015, pp.~448--456.
+
+\bibitem{goodfellow2016}
+I.~Goodfellow, Y.~Bengio, and A.~Courville, 
+\emph{Deep Learning}. 
+MIT Press, 2016.
+
+\bibitem{holland1975}
+J.~H.~Holland, 
+\emph{Adaptation in Natural and Artificial Systems}. 
+University of Michigan Press, 1975.
+
+\bibitem{storn1997}
+R.~Storn and K.~Price, 
+``Differential evolution – A simple and efficient heuristic for global optimization over continuous spaces,'' 
+\emph{Journal of Global Optimization}, vol.~11, no.~4, pp.~341--359, 1997.
+
+\bibitem{kennedy1995}
+J.~Kennedy and R.~Eberhart, 
+``Particle swarm optimization,'' 
+in \emph{Proc. IEEE Int. Conf. Neural Networks}, 1995, pp.~1942--1948.
+
+\bibitem{zhan2022}
+Z.-H.~Zhan, J.~Li, and J.~Zhang, 
+``Evolutionary deep learning: A survey,'' 
+\emph{Neurocomputing}, vol.~483, pp.~42--58, 2022.
+
+\end{thebibliography}
+
 \end{document}
