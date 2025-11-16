@@ -2,32 +2,32 @@
 
 import torch
 import torch.nn as nn
-import torchvision.transforms as transforms, torchvision, matplotlib.pyplot as plt
+import torchvision
+import torchvision.transforms as transforms
 import torch.optim as optim
 import torch.nn.functional as F
 
 # hyperparameters
-learning_rate = 0.001
-momentum = 0.9
-num_epochs = 1
+LEARNING_RATE = 0.001
+MOMENTUM = 0.9
+NUM_EPOCHS = 1
 
-# in CIFAR10, each image is 32x32 pixels with 3 color channels (red, blue, green))
+# in CIFAR10, each image is 32×32 pixels with 3 color channels (red, blue, green))
 
 transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-# CNN model structure 
+
 class CNN(nn.Module):
     def __init__(self):
-        super(CNN, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1) #3 colour channels in, 64 feature maps out
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2) # downsamples image by factor of 2
-        self.conv2 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1) # 64 features in, 128 features out
-        self.fc1 = nn.Linear(128 * 8 * 8, 1024) # 8x8 after 2 poolings, 128 channels
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1)  # 3 colour channels in, 64 feature maps out
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)  # downsamples image by factor of 2
+        self.conv2 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)  # 64 features in, 128 features out
+        self.fc1 = nn.Linear(128*8*8, 1024)  # 8×8 after 2 poolings, 128 channels
         self.fc2 = nn.Linear(1024, 512)
-        self.fc3 = nn.Linear(512, 10) # 10 class output
-        self.flatten = nn.Flatten() # converts into 1D feature vector
+        self.fc3 = nn.Linear(512, 10)  # 10 class output
+        self.flatten = nn.Flatten()  # converts into 1D feature vector
 
-    # flow of data through the network
     def forward(self, x):
         x = F.relu(self.conv1(x))
         x = self.pool(x)
@@ -41,8 +41,8 @@ class CNN(nn.Module):
         x = self.fc3(x)
         return x
 
+
 if __name__ == '__main__':
-    
     # multiprocessing and batch size
     dataload_speed = 3
     batch_size = 4
@@ -58,9 +58,9 @@ if __name__ == '__main__':
                                               num_workers=dataload_speed)
 
     testset = torchvision.datasets.CIFAR10(root='./data',
-                                          train=False,
-                                          download=True,
-                                          transform=transform)
+                                           train=False,
+                                           download=True,
+                                           transform=transform)
 
     testloader = torch.utils.data.DataLoader(testset,
                                              batch_size=batch_size,
@@ -68,15 +68,15 @@ if __name__ == '__main__':
                                              num_workers=dataload_speed)
 
     classes = {"airplane",
-    "automobile",
-    "bird",
-    "cat",
-    "deer",
-    "dog",
-    "frog",
-    "horse",
-    "ship",
-    "truck"}
+               "automobile",
+               "bird",
+               "cat",
+               "deer",
+               "dog",
+               "frog",
+               "horse",
+               "ship",
+               "truck"}
 
     if torch.cuda.is_available():
         device = torch.device("cuda")  # uses GPU (setup CUDA toolkit with compatible version if not already done with PyTorch, or just use CPU)
@@ -91,11 +91,11 @@ if __name__ == '__main__':
 
     # loss function and optimiser (stochastic gradient descent baseline)
     criterion = nn.CrossEntropyLoss()
-    optimiser = optim.SGD(network.parameters(), lr=learning_rate, momentum=momentum)
+    optimiser = optim.SGD(network.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
 
-    # standard training loop that repeats for [num_epochs] times with forward pass, loss calculation then backpropogation, updating weights
-    print("Starting Training:\n")
-    for epoch in range(num_epochs):
+    # standard training loop that repeats for [NUM_EPOCHS] times with forward pass, loss calculation then backpropogation, updating weights
+    print("Starting training\n")
+    for epoch in range(NUM_EPOCHS):
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0): # loads batch data
             inputs, labels = data
@@ -108,13 +108,12 @@ if __name__ == '__main__':
             optimiser.step()
             running_loss += loss.item()
 
-            # print results every specified number of batches
             if i % 200 == 199:
                 print("Epoch [%d/%d], Step [%d/%d], Loss: %.4f"
-                      % (epoch + 1, num_epochs, i + 1, len(trainloader), running_loss / 200))
+                      % (epoch+1, NUM_EPOCHS, i+1, len(trainloader), running_loss/200))
                 running_loss = 0.0
 
-    print('Finished Training')
+    print('Finished training')
 
 
     # testing loop, applying trained model to test dataset and calculating accuracy
@@ -130,11 +129,12 @@ if __name__ == '__main__':
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-    accuracy = correct / total * 100
-    print('Accuracy of the network on the 10000 test images: %d %%' % (accuracy))
+    accuracy = correct/total
+    print('Accuracy of the network on the 10000 test images: %d %%' % (accuracy*100))
+
+    print()
     
-    
-    print("\nFreezing all layers and randomising fc3:")
+    print("Freezing all layers and randomising fc3")
 
     for param in network.parameters():
         param.requires_grad = False # freezes all layers
