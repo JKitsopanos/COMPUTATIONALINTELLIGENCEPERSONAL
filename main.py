@@ -42,11 +42,24 @@ class CNN(nn.Module):
         return x
 
 
-if __name__ == '__main__':
-    # multiprocessing and batch size
-    dataload_speed = 3
-    batch_size = 4
+criterion = nn.CrossEntropyLoss()
 
+# multiprocessing and batch size
+dataload_speed = 3
+batch_size = 4
+
+CLASSES = {"airplane",
+           "automobile",
+           "bird",
+           "cat",
+           "deer",
+           "dog",
+           "frog",
+           "horse",
+           "ship",
+           "truck"}
+
+if __name__ == '__main__':
     # load CIFAR10 dataset
     trainset = torchvision.datasets.CIFAR10(root='./data', 
                                             train=True, 
@@ -67,17 +80,6 @@ if __name__ == '__main__':
                                              shuffle=False, 
                                              num_workers=dataload_speed)
 
-    classes = {"airplane",
-               "automobile",
-               "bird",
-               "cat",
-               "deer",
-               "dog",
-               "frog",
-               "horse",
-               "ship",
-               "truck"}
-
     if torch.cuda.is_available():
         device = torch.device("cuda")  # uses GPU (setup CUDA toolkit with compatible version if not already done with PyTorch, or just use CPU)
     else:
@@ -90,14 +92,13 @@ if __name__ == '__main__':
     network.to(device)
 
     # loss function and optimiser (stochastic gradient descent baseline)
-    criterion = nn.CrossEntropyLoss()
     optimiser = optim.SGD(network.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
 
     # standard training loop that repeats for [NUM_EPOCHS] times with forward pass, loss calculation then backpropogation, updating weights
     print("Starting training\n")
     for epoch in range(NUM_EPOCHS):
         running_loss = 0.0
-        for i, data in enumerate(trainloader, 0): # loads batch data
+        for i, data in enumerate(trainloader):  # loads batch data
             inputs, labels = data
             inputs = inputs.to(device)
             labels = labels.to(device)
@@ -136,10 +137,15 @@ if __name__ == '__main__':
     
     print("Freezing all layers and randomising fc3")
 
+    torch.save(network, "sgd.pt")
+
     for param in network.parameters():
-        param.requires_grad = False # freezes all layers
+        param.requires_grad = False  # freezes all layers
 
     for param in network.fc3.parameters():
-        param.requires_grad = True # unfreezes just fc3
+        param.requires_grad = True  # unfreezes just fc3
 
-    network.fc3.reset_parameters() # randomises fc3 weights
+    network.fc3.reset_parameters()  # randomises fc3 weights
+
+    torch.save(network, "base.pt")
+    
