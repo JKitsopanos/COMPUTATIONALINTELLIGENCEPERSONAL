@@ -1,5 +1,5 @@
 clean:
-	rm -f *.bib *.aux *.bbl *.bcf *.blg *.log *.out *.run.xml *.toc
+	rm -f refs.bib *.aux *.bbl *.bcf *.blg *.log *.out *.run.xml *.toc report.pdf
 
 report.pdf:	report.tex
 	pdflatex report
