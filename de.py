@@ -39,7 +39,7 @@ def generate_samples(model: main.CNN, n: int) -> torch.Tensor:
 
 
 def mutate(original: torch.Tensor, mutant: torch.Tensor, differential_weight) -> None:
-    """Return the population, mutated per the original scheme.
+    """Mutate the population in-place per the original scheme.
 
     Arguments:
     population -- a tensor where each row is an individual
@@ -107,4 +107,5 @@ def train(base: main.CNN, differential_weight, cr, population_size: int, steps: 
 base = torch.load("base.pt", weights_only=False)
 
 if __name__ == "__main__":
-    print(train(base, 0.5, 0.5, 100, 100))
+    print(base)
+    print(train(base, 0.5, 0.5, 100, 5))
