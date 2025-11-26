@@ -13,7 +13,7 @@ from typing import Callable, Tuple
 VAL_N: int = 2048
 VAL_SEED: int = 0
 BATCH_SIZE: int = 128
-NUM_WORKERS: int = 2
+NUM_WORKERS: int = 0
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 criterion = nn.CrossEntropyLoss()
