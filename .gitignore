@@ -227,3 +227,6 @@ __marimo__/
 
 # dataset
 data/
+
+# latex internal files
+*.synctex.gz

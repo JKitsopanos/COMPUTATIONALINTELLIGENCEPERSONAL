@@ -4,18 +4,28 @@ import torch
 import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
-import torch.optim as optim
 import torch.nn.functional as F
 
 # hyperparameters
 LEARNING_RATE = 0.001
 MOMENTUM = 0.9
-NUM_EPOCHS = 1
+NUM_EPOCHS = 10
+DATALOAD_SPEED = 3
+BATCH_SIZE = 4
 
 # in CIFAR10, each image is 32×32 pixels with 3 color channels (red, blue, green))
+CLASSES = ["airplane",
+           "automobile",
+           "bird",
+           "cat",
+           "deer",
+           "dog",
+           "frog",
+           "horse",
+           "ship",
+           "truck"]
 
 transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
 
 class CNN(nn.Module):
     def __init__(self):
@@ -41,111 +51,22 @@ class CNN(nn.Module):
         x = self.fc3(x)
         return x
 
-
-criterion = nn.CrossEntropyLoss()
-
-# multiprocessing and batch size
-dataload_speed = 3
-batch_size = 4
-
-CLASSES = {"airplane",
-           "automobile",
-           "bird",
-           "cat",
-           "deer",
-           "dog",
-           "frog",
-           "horse",
-           "ship",
-           "truck"}
-
-if __name__ == '__main__':
+def get_dataloaders():
     # load CIFAR10 dataset
-    trainset = torchvision.datasets.CIFAR10(root='./data', 
+    trainset = torchvision.datasets.CIFAR10(root='./data',
                                             train=True, 
                                             download=True,
                                             transform=transform)
     trainloader = torch.utils.data.DataLoader(trainset,
-                                              batch_size=batch_size,
-                                              shuffle=True, 
-                                              num_workers=dataload_speed)
-
+                                              batch_size=BATCH_SIZE, 
+                                              shuffle=True,
+                                              num_workers=DATALOAD_SPEED)
     testset = torchvision.datasets.CIFAR10(root='./data',
-                                           train=False,
+                                           train=False, 
                                            download=True,
                                            transform=transform)
-
     testloader = torch.utils.data.DataLoader(testset,
-                                             batch_size=batch_size,
-                                             shuffle=False, 
-                                             num_workers=dataload_speed)
-
-    if torch.cuda.is_available():
-        device = torch.device("cuda")  # uses GPU (setup CUDA toolkit with compatible version if not already done with PyTorch, or just use CPU)
-    else:
-        device = torch.device("cpu")  # uses CPU
-
-    print(f'Using device: {device}')
-
-    # initialises CNN and moves tensors to device
-    network = CNN()
-    network.to(device)
-
-    # loss function and optimiser (stochastic gradient descent baseline)
-    optimiser = optim.SGD(network.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
-
-    # standard training loop that repeats for [NUM_EPOCHS] times with forward pass, loss calculation then backpropogation, updating weights
-    print("Starting training\n")
-    for epoch in range(NUM_EPOCHS):
-        running_loss = 0.0
-        for i, data in enumerate(trainloader):  # loads batch data
-            inputs, labels = data
-            inputs = inputs.to(device)
-            labels = labels.to(device)
-            optimiser.zero_grad()
-            outputs = network(inputs) 
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimiser.step()
-            running_loss += loss.item()
-
-            if i % 200 == 199:
-                print("Epoch [%d/%d], Step [%d/%d], Loss: %.4f"
-                      % (epoch+1, NUM_EPOCHS, i+1, len(trainloader), running_loss/200))
-                running_loss = 0.0
-
-    print('Finished training')
-
-
-    # testing loop, applying trained model to test dataset and calculating accuracy
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for data in testloader:
-            images, labels = data
-            images = images.to(device)
-            labels = labels.to(device)
-            outputs = network(images)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-
-    accuracy = correct/total
-    print('Accuracy of the network on the 10000 test images: %d %%' % (accuracy*100))
-
-    print()
-    
-    print("Freezing all layers and randomising fc3")
-
-    torch.save(network, "sgd.pt")
-
-    for param in network.parameters():
-        param.requires_grad = False  # freezes all layers
-
-    for param in network.fc3.parameters():
-        param.requires_grad = True  # unfreezes just fc3
-
-    network.fc3.reset_parameters()  # randomises fc3 weights
-
-    torch.save(network, "base.pt")
-    
+                                             batch_size=BATCH_SIZE, 
+                                             shuffle=False,
+                                             num_workers=DATALOAD_SPEED)
+    return trainloader, testloader
