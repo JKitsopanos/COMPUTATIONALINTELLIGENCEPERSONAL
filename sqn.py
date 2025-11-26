@@ -115,7 +115,7 @@ def sqn(params: torch.Tensor,
         if k % modulus == 0:
             averaged_params[t+1] /= modulus
             t += 1  # this step is incorrectly placed at the top of the block in the paper
-            if t > 0:
+            if 0 < t < num_epochs//modulus-1:
                 s[t+1] = averaged_params[t+1] - averaged_params[t]
                 y[t+1] = hessian_vector_product_of_params(averaged_params[t+1], s[t+1], hessian_batch_size)
 
