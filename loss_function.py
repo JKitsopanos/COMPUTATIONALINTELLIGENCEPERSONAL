@@ -6,6 +6,7 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, Subset
+
 from typing import Callable, Tuple
 
 
@@ -51,14 +52,16 @@ def freeze_except_fc3(model: nn.Module) -> nn.Module:
 
 
 
-def model_to_individual(model: nn.Module) -> torch.Tensor:
-    params = [p.detach().flatten() for p in model.fc3.parameters()]
+def model_to_individual(model: nn.Module, grad: bool = False) -> torch.Tensor:
+    if grad:
+        params = [p.flatten() for p in model.fc3.parameters()]
+    else:
+        params = [p.detach().flatten() for p in model.fc3.parameters()]
     if not params:
         raise ValueError("model.fc3 has no parameters to optimise.")
     return torch.cat(params)
 
 def individual_to_model(individual: torch.Tensor, model: nn.Module) -> nn.Module:
-   
     with torch.no_grad():
         idx = 0
         for p in model.fc3.parameters():
@@ -66,6 +69,7 @@ def individual_to_model(individual: torch.Tensor, model: nn.Module) -> nn.Module
             segment = individual[idx:idx + num].reshape_as(p)
             p.copy_(segment.to(device=p.device, dtype=p.dtype))
             idx += num
+    
     return model
 
 
@@ -123,7 +127,7 @@ def loss_function(individual: torch.Tensor, base_model: nn.Module) -> float:
         individual_to_model(ind, base_model)
         return _loss_function(base_model)
     finally:
-       
+        
         with torch.no_grad():
             for p, s in zip(base_model.fc3.parameters(), saved):
                 p.copy_(s)
@@ -162,9 +166,9 @@ def l2_regulariser_fc3(individual: torch.Tensor) -> float:
     return torch.sum(ind * ind).item()
 
 def nsga2_objectives(
-    individual: torch.Tensor,
-    base_model: nn.Module,
-    use_accuracy: bool = False
+        individual: torch.Tensor,
+        base_model: nn.Module,
+        use_accuracy: bool = False
 ) -> Tuple[float, float]:
     if use_accuracy:
         acc = accuracy_function(individual, base_model)
