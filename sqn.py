@@ -28,13 +28,19 @@ def get_batch(size: int) -> tuple:
 
 def get_loss_of_model(model: main.CNN, batch_size: int) -> torch.Tensor:
     images, labels = get_batch(batch_size)
+    device = next(model.parameters()).device
+    images = images.to(device)
+    labels = labels.to(device)
     outputs = model(images)
     loss = loss_function.criterion(outputs, labels)
     return loss
 
 
 def get_loss_of_params(params: torch.Tensor, batch_size: int) -> torch.Tensor:
-    return get_loss_of_model(loss_function.individual_to_model(params, base), batch_size)
+    model = copy.deepcopy(base)
+    model.to(params.device)
+    model = loss_function.individual_to_model(params, model)
+    return get_loss_of_model(model, batch_size)
 
 
 def get_gradient_of_model(model: main.CNN, batch_size: int, for_hessian: bool = False) -> torch.Tensor:
@@ -44,18 +50,22 @@ def get_gradient_of_model(model: main.CNN, batch_size: int, for_hessian: bool = 
 
 
 def get_gradient_of_params(params: torch.Tensor, batch_size: int, for_hessian: bool = False) -> torch.Tensor:
-    return get_gradient_of_model(loss_function.individual_to_model(params, base), batch_size, for_hessian=for_hessian)
+    model = copy.deepcopy(base)
+    model.to(params.device)
+    model = loss_function.individual_to_model(params, model)
+    return get_gradient_of_model(model, batch_size, for_hessian=for_hessian)
 
 
 def get_hessian_of_params(params: torch.Tensor, batch_size: int) -> torch.Tensor:
     model = copy.deepcopy(base)
+    model.to(params.device)
     model = loss_function.individual_to_model(params, model)
     
     fc3_params = [p for p in model.fc3.parameters()]
     
     gradient = get_gradient_of_model(model, batch_size, for_hessian=True)
     
-    hessian = torch.empty((len(gradient), len(gradient)))
+    hessian = torch.empty((len(gradient), len(gradient)), device=params.device)
     for i in range(len(hessian)):
         hessian[i] = torch.cat([g.flatten() for g in torch.autograd.grad(gradient[i], fc3_params, retain_graph=True, materialize_grads=True)])
 
@@ -86,12 +96,13 @@ def sqn(params: torch.Tensor,
         loss_batch_size: int = 1) -> torch.Tensor:
     assert len(params.shape) == 1
     
+    device = params.device
     t = -1
-    averaged_params = torch.zeros((num_epochs//modulus, len(params)))
+    averaged_params = torch.zeros((num_epochs//modulus, len(params)), device=device)
     s = torch.empty_like(averaged_params)
     y = torch.empty_like(averaged_params)
 
-    approximate_inverse_hessian = torch.empty((len(params), len(params)))
+    approximate_inverse_hessian = torch.empty((len(params), len(params)), device=device)
     
     for k in range(1, num_epochs+1):
         print(f"{k}\t{get_loss_of_params(params, loss_batch_size).item()}")
@@ -100,12 +111,12 @@ def sqn(params: torch.Tensor,
         if k <= 2*modulus:
             params -= step_size(k)*gradient(params, gradient_batch_size)
         else:
-            approximate_inverse_hessian[:, :] = torch.eye(len(approximate_inverse_hessian))
+            approximate_inverse_hessian[:, :] = torch.eye(len(approximate_inverse_hessian), device=device)
             approximate_inverse_hessian *= torch.dot(s[t+1], y[t+1])/torch.dot(y[t+1], y[t+1])
             memory = min(t, max_memory)
             for j in range(t-memory+1, t+1):
                 rho = 1/torch.dot(y[j+1], s[j+1])
-                multiplier = torch.eye(len(params)) - rho*torch.outer(s[j+1], y[j+1])
+                multiplier = torch.eye(len(params), device=device) - rho*torch.outer(s[j+1], y[j+1])
                 approximate_inverse_hessian = multiplier@approximate_inverse_hessian
                 approximate_inverse_hessian @= multiplier
                 approximate_inverse_hessian += rho*torch.outer(s[j+1], s[j+1])
