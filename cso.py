@@ -6,9 +6,9 @@ Competitive Swarm Optimisation (CSO) on the final layer (fc3) of the CNN.
 
 from typing import Tuple, Callable
 
+import os
 import sys
 import torch
-
 import main
 from main import CNN
 from loss_function import (
@@ -17,9 +17,11 @@ from loss_function import (
     individual_to_model,
 )
 
-sys.modules["__main__"].CNN = main.CNN
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-POPULATION_SIZE = 10
+from visualisation import plot_loss_curve
+
+sys.modules["__main__"].CNN = main.CNN
 
 
 def initialise_population(base: CNN, population_size: int) -> torch.Tensor:
@@ -112,7 +114,6 @@ def cso_update(
 
     return new_positions, new_velocities
 
-
 def train(
     base: CNN,
     inertia_weight: float,
@@ -121,25 +122,27 @@ def train(
     population_size: int,
     steps: int,
 ) -> CNN:
-    
     loss_f = make_loss_function(base)
 
-    #Initialisation
+    # Initialisation
     positions = initialise_population(base, population_size)
     velocities = initialise_velocities(positions)
 
     current_losses = evaluate_population(positions, loss_f)
 
-    #Tracking global best solution for logging and final model
+    # Tracking global best solution for logging and final model
     best_index = torch.argmin(current_losses)
     global_best_position = positions[best_index].clone()
     global_best_loss = float(current_losses[best_index].item())
 
     print(f"Initial best loss: {global_best_loss:.4f}")
 
-    #CSO iterations
+    # track best loss over time for visualisation
+    best_losses = [global_best_loss]
+
+    # CSO iterations
     for step in range(steps):
-        #Update swarm via CSO using current losses
+        # Update swarm via CSO using current losses
         positions, velocities = cso_update(
             positions=positions,
             velocities=velocities,
@@ -153,15 +156,29 @@ def train(
 
         best_index = torch.argmin(current_losses)
         candidate_best_loss = float(current_losses[best_index].item())
+
         if candidate_best_loss < global_best_loss:
             global_best_loss = candidate_best_loss
             global_best_position = positions[best_index].clone()
+
+        # record best loss for this step (even if it did not improve)
+        best_losses.append(global_best_loss)
 
         if (step + 1) % 10 == 0 or step == 0:
             print(f"Step {step + 1}/{steps} - best loss: {global_best_loss:.4f}")
 
     best_model = individual_to_model(global_best_position, base)
+
+    # plot convergence curve
+    plot_loss_curve(
+        best_losses,
+        title="CSO: Best Loss per Step",
+        xlabel="Step",
+        save_path="cso_best_loss.png",
+    )
+
     return best_model
+
 
 
 base = torch.load("base.pt", weights_only=False)
