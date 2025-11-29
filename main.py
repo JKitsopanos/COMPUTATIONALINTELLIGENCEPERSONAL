@@ -25,8 +25,6 @@ CLASSES = ["airplane",
            "ship",
            "truck"]
 
-transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
 class CNN(nn.Module):
     def __init__(self):
         super().__init__()
@@ -53,6 +51,7 @@ class CNN(nn.Module):
 
 def get_dataloaders():
     # load CIFAR10 dataset
+    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     trainset = torchvision.datasets.CIFAR10(root='./data',
                                             train=True, 
                                             download=True,
