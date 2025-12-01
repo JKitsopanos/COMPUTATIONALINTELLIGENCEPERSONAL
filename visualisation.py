@@ -1,17 +1,5 @@
 #!/usr/bin/env python3
 
-"""
-Visualisation utilities for CIFAR-10 optimisation experiments.
-
-Includes:
-- Generic loss and accuracy curves (per iteration / epoch / step).
-- Pareto front plotting for NSGA-II style multi-objective runs.
-- Helpers for extracting and plotting NSGA-II logbook metrics.
-- Comparison plots across multiple optimisation algorithms.
-
-Safe to import from any optimisation script (SGD, SQN, DE, CSO, NSGA-II, etc.).
-"""
-
 from __future__ import annotations
 
 from typing import Sequence, Tuple, List, Mapping
@@ -50,20 +38,7 @@ def plot_loss_curve(
     xlabel: str = "Iteration",
     save_path: str | None = None,
 ) -> None:
-    """
-    Plot a single loss curve.
 
-    Parameters
-    ----------
-    losses:
-        Sequence of loss values, in temporal order.
-    title:
-        Title for the plot.
-    xlabel:
-        Label for the x-axis (e.g. 'Epoch', 'Step', 'Iteration').
-    save_path:
-        Optional path to save the figure as a PNG. If None, the plot is not saved.
-    """
     if len(losses) == 0:
         raise ValueError("plot_loss_curve received an empty sequence of losses.")
 
@@ -86,20 +61,7 @@ def plot_accuracy_curve(
     xlabel: str = "Iteration",
     save_path: str | None = None,
 ) -> None:
-    """
-    Plot a single accuracy curve (in percent).
-
-    Parameters
-    ----------
-    accuracies:
-        Sequence of accuracy values expressed in percent (0–100).
-    title:
-        Title for the plot.
-    xlabel:
-        Label for the x-axis (e.g. 'Epoch', 'Step', 'Generation').
-    save_path:
-        Optional path to save the figure as a PNG.
-    """
+   
     if len(accuracies) == 0:
         raise ValueError("plot_accuracy_curve received an empty sequence of accuracies.")
 
@@ -122,22 +84,7 @@ def plot_pareto_front(
     title: str,
     save_path: str | None = None,
 ) -> None:
-    """
-    Plot a Pareto front for a two-objective problem:
-    - Objective 1: error (1 - accuracy) or validation loss.
-    - Objective 2: Gaussian / L2 regulariser (sum of squares).
-
-    Parameters
-    ----------
-    errors:
-        Sequence of error values (e.g. 1 - accuracy, or loss).
-    regs:
-        Sequence of regulariser values (e.g. L2 norms).
-    title:
-        Title for the plot.
-    save_path:
-        Optional path to save the figure as a PNG.
-    """
+   
     if len(errors) == 0 or len(regs) == 0:
         raise ValueError("plot_pareto_front received empty sequences.")
     if len(errors) != len(regs):
@@ -158,30 +105,7 @@ def plot_pareto_front(
 
 
 def extract_nsga_logbook_curves(logbook) -> Tuple[List[float], List[float], List[float]]:
-    """
-    Extract per-generation metrics from a DEAP-style NSGA-II logbook.
-
-    Assumes that:
-    - logbook.select("min") returns a list of tuples per generation:
-      (objective_1, objective_2), where
-        objective_1 = error (1 - accuracy) OR validation loss
-        objective_2 = L2 regulariser (sum of squares)
-    - Accuracy is computed as (1 - error) * 100 if objective_1 is error.
-
-    Parameters
-    ----------
-    logbook:
-        A DEAP.tools.Logbook (or compatible) instance with a "min" field.
-
-    Returns
-    -------
-    accuracies:
-        List of accuracies per generation, in percent.
-    errors:
-        List of errors (1 - accuracy) per generation.
-    regs:
-        List of regulariser values per generation.
-    """
+   
     mins = logbook.select("min")  # list of (error, reg) per generation
 
     if len(mins) == 0:
@@ -199,24 +123,7 @@ def plot_nsga_logbook_progress(
     title_prefix: str = "NSGA-II",
     save_prefix: str | None = None,
 ) -> None:
-    """
-    Plot NSGA-II progress over generations:
-    - Accuracy vs generation.
-    - Error vs generation.
-    - Regulariser vs generation.
-
-    Parameters
-    ----------
-    logbook:
-        DEAP-style Logbook with a "min" field.
-    title_prefix:
-        Prefix to use in figure titles (e.g. 'NSGA-II (accuracy-based)').
-    save_prefix:
-        If provided, three figures will be saved as:
-        '{save_prefix}_accuracy.png',
-        '{save_prefix}_error.png',
-        '{save_prefix}_regulariser.png'.
-    """
+    
     accuracies, errors, regs = extract_nsga_logbook_curves(logbook)
     generations = range(1, len(accuracies) + 1)
 
@@ -260,34 +167,7 @@ def plot_multiple_loss_curves(
     xlabel: str = "Iteration",
     save_path: str | None = None,
 ) -> None:
-    """
-    Plot loss curves from multiple optimisation methods on a single figure.
-
-    Example
-    -------
-    plot_multiple_loss_curves(
-        {
-            "SGD": sgd_losses,
-            "SQN": sqn_losses,
-            "CSO": cso_best_losses,
-            "DE": de_best_losses,
-        },
-        title="Loss Comparison Across Methods",
-        xlabel="Step",
-        save_path="loss_comparison.png",
-    )
-
-    Parameters
-    ----------
-    losses_by_label:
-        Mapping from method name (legend label) to a sequence of loss values.
-    title:
-        Title for the plot.
-    xlabel:
-        Label for the x-axis.
-    save_path:
-        Optional path to save the figure as a PNG.
-    """
+    
     if not losses_by_label:
         raise ValueError("plot_multiple_loss_curves received an empty mapping.")
 
